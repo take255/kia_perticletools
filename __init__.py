@@ -31,7 +31,7 @@ bl_info = {
 
 class KIAPARTICLETOOLS_Props_OA(PropertyGroup):
 
-    setting_name : StringProperty(name="Collection", maxlen=63 )
+    setting_name : StringProperty(name="Setting", maxlen=63, update=cmd.test)
     allsettings : CollectionProperty(type=PropertyGroup) 
 
     collection_name : StringProperty(name="Collection", maxlen=63 )
@@ -42,7 +42,7 @@ class KIAPARTICLETOOLS_Props_OA(PropertyGroup):
 
 
 class KIAPARTICLETOOLS_PT_particletools(utils.panel):
-    bl_idname = "kiaparticletools.particletools"
+    #bl_idname = "kiaparticletools.particletools"
     bl_label = "Particle Tools"
 
     def invoke(self, context, event):

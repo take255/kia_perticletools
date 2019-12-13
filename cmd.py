@@ -12,6 +12,17 @@ imp.reload(utils)
 #         bpy.data.particles[p.settings.name].shape = col
 
 #---------------------------------------------------------------------------------------
+#パーティクルセッティングを変更したときパラメータをアップデート
+#---------------------------------------------------------------------------------------
+def test(self,context):
+    print(11)
+    act = utils.getActiveObj()
+    props = bpy.context.scene.kiaparticletools_oa
+
+    #props.setting_name
+    props.collection_name = bpy.data.particles[props.setting_name].effector_weights.collection.name
+
+#---------------------------------------------------------------------------------------
 #パーティクルのパラメータアップデート
 #---------------------------------------------------------------------------------------
 def apply(self,context):
@@ -23,7 +34,10 @@ def apply(self,context):
         bpy.data.particles[p.settings.name].shape = props.strand_shape
 
 
+
+#---------------------------------------------------------------------------------------
 #現在のシーンをシーンメニューにセット
+#---------------------------------------------------------------------------------------
 def set_collection():
     props = bpy.context.scene.kiaparticletools_oa
     props.allcollections.clear()
@@ -33,17 +47,17 @@ def set_collection():
 
     #パーティクルセッティング
     props.allsettings.clear()
+    ps = set()
 
     particle_systems = utils.getActiveObj().particle_systems
     for p in particle_systems:
-        props.allsettings.add().name = p.settings.name
+        ps.add(p.settings.name)
 
-#        bpy.data.particles[p.settings.name].effector_weights.collection = col
-
-    #row.prop_search(props, "setting_name", props, "allsettings", icon='SCENE_DATA')
-
+    for p in ps:    
+        props.allsettings.add().name = p
 
 
+#---------------------------------------------------------------------------------------
 def effector_collection_assign(mode):
     if mode:
         props = bpy.context.scene.kiatools_oa
