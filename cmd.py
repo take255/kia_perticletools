@@ -40,10 +40,30 @@ def apply_attr( attr ):
     props = bpy.context.scene.kiaparticletools_oa
     particle_systems = utils.getActiveObj().particle_systems
     for i , p in enumerate(particle_systems):
+        print(i,checked[i])
         ps = p.settings
         if checked[i]:
             exec('ps.%s=props.%s' % (attr,attr))
 
+
+
+def apply_edit_render_step(self,context):
+    props = bpy.context.scene.kiaparticletools_oa
+    bpy.context.scene.tool_settings.particle_edit.display_step = props.edit_display_step
+
+#     checked = index_checked()
+#     props = bpy.context.scene.kiaparticletools_oa
+#     particle_systems = utils.getActiveObj().particle_systems
+#     for i in enumerate(particle_systems):
+#         #ps = p.settings
+#         if checked[i]:
+#             bpy.context.scene.tool_settings.particle_edit.display_step = props.edit_display_step
+#             #exec('ps.%s=props.%s' % (attr,attr))
+
+#     #edit_display_step :  IntProperty(name = "edit_display_step" , update=cmd.apply_edit_render_step)
+    
+
+#  #bpy.context.scene.tool_settings.particle_edit.display_step = 6
 
 
 #UPDATE
@@ -56,11 +76,8 @@ def apply_attr( attr ):
 #パーティクルセッティングを変更したときパラメータをアップデート
 #---------------------------------------------------------------------------------------
 def test(self,context):
-    act = utils.getActiveObj()
-    props = bpy.context.scene.kiaparticletools_oa
+    print('aaaaa')
 
-    #props.setting_name
-    props.collection_name = bpy.data.particles[props.setting_name].effector_weights.collection.name
 
 #---------------------------------------------------------------------------------------
 #パーティクルのパラメータアップデート
@@ -69,7 +86,10 @@ def apply(self,context):
 
     checked = index_checked()
 
+
     global isBanApply
+
+    print(isBanApply)
     if isBanApply:
         return
     # act = utils.getActiveObj()
@@ -81,7 +101,7 @@ def apply(self,context):
     for i , p in enumerate(particle_systems):
         #ps = bpy.data.particles[p.settings.name]
         ps = p.settings
-        if checked[i] or index == i:
+        if checked[i]:
             for attr in ATTRIBUTE:
                 exec('ps.%s=props.%s' % (attr,attr))
             # ps.shape = props.shape
@@ -136,6 +156,8 @@ def set_attribute():
 
     for attr in ATTRIBUTE:
         exec('props.%s=ps[index].settings.%s' % (attr,attr))
+
+    props.edit_display_step = bpy.context.scene.tool_settings.particle_edit.display_step
 
     # props.shape = ps[ps.active_index].settings.shape
     # props.root_radius = ps[ps.active_index].settings.root_radius
@@ -225,11 +247,11 @@ def copy_particle_settings():
             p.settings = active_setting
         
     
-def sort_particle_sistem():
-    ps = utils.getActiveObj().particle_systems
-    print(dir(ps))
-    #ps[0] , ps[1] = ps[1] , ps[0]
-    reload()
+# def sort_particle_sistem():
+#     ps = utils.getActiveObj().particle_systems
+#     print(dir(ps))
+#     ps[0] = ps[1]
+#     reload()
 
 
 #---------------------------------------------------------------------------------------
@@ -243,9 +265,27 @@ def active_index():
     ui_list = bpy.context.window_manager.kiaparticletools_list
     return ui_list.active_index
 
-def active_index_set(index):
+#パーティクルシステム順のインデックス
+def active_ps_index():
     ui_list = bpy.context.window_manager.kiaparticletools_list
-    ui_list.active_index = index
+
+    #print(itemlist())
+    index = itemlist()[ui_list.active_index].idx
+   # print(itemlist()[ui_list.active_index].mod)
+
+    return index
+    #return ui_list[ui_list.active_index].idx
+    #return ui_list.active.idx
+
+
+def active_index_set(index):
+    #index_list = 0
+    for i,x in enumerate(itemlist()):
+        if x.idx == index:
+            index_list = i
+
+    ui_list = bpy.context.window_manager.kiaparticletools_list
+    ui_list.active_index = index_list
 
 def index_checked():
     # result = []
@@ -253,10 +293,15 @@ def index_checked():
     #     node.bool_val = True
     return [x.check  for x in itemlist()]
 
-def disp():
+def disp(self,context):
     for x in itemlist():
-        if x.check:
+        if x.disp:
             x.iconname = 'RESTRICT_VIEW_OFF'
+            bpy.context.object.modifiers[x.mod].show_viewport = True
+
+        else:
+            x.iconname = 'RESTRICT_VIEW_ON'
+            bpy.context.object.modifiers[x.mod].show_viewport = False
 
 
 def get_item():
@@ -266,19 +311,77 @@ def showhide():
 def set_item():
     pass
 def clear():
-    # ui_list = bpy.context.window_manager.kiaparticletools_list
-    # itemlist = ui_list.itemlist    
-    # itemlist.clear()
     il = itemlist()
     il.clear()
 
 def reload():
+    clear()
     act = utils.getActiveObj()
     #ui_list = bpy.context.window_manager.kiaparticletools_list
     il = itemlist()
-    clear()
+    
     particle_systems = act.particle_systems
-    for p in particle_systems:
+
+    # if len(particle_systems) == 0:
+    #     return True
+    
+    #パーティクルのモディファイヤを取得。リストに加える
+    mod_dic = {}
+    for mod in act.modifiers:
+        if mod.type == 'PARTICLE_SYSTEM':
+        
+            mod_dic[mod.particle_system.name] = [ mod.name , mod.show_viewport ]
+
+
+    #名前でソートする
+    #パーティクル名、インデックス、モディファイヤ名、現在の表示状態
+    result = []
+    for i,p in enumerate(particle_systems):
+        result.append([p.name ,i , mod_dic[p.name][0] , mod_dic[p.name][1] ] )
+    
+    result.sort()
+    
+    for p in result:
         item = il.add()
-        item.name = p.name
-        item.iconname = 'GROUP'
+        item.name = p[0]
+        item.iconname = 'RESTRICT_VIEW_OFF'
+        item.idx = p[1]
+        item.mod = p[2]
+        item.disp = p[3]
+
+    #return False
+    # for p in particle_systems:
+    #     item = il.add()
+    #     item.name = p.name
+    #     item.iconname = 'GROUP'
+
+#アクティブオブジェクトにパーティクルがあるかどうかチェック
+def check_not_ps():
+    act = utils.getActiveObj()
+    particle_systems = act.particle_systems
+    if len(particle_systems) == 0:
+        return True
+    else:
+        False
+
+#すべてのパーティクルの表示状態変更
+def showhide_all(mode):
+    print(mode)
+    for x in itemlist():
+        x.disp = mode
+
+    #disp()
+
+    # if mode:
+    #     for x in itemlist():
+    #         x.disp = mode
+    #         print(x.mod)
+    #         x.iconname = 'RESTRICT_VIEW_OFF'
+    #         bpy.context.object.modifiers[x.mod].show_viewport = True
+    # else:
+    #     for x in itemlist():
+    #         x.iconname = 'RESTRICT_VIEW_ON'
+    #         bpy.context.object.modifiers[x.mod].show_viewport = False
+
+
+

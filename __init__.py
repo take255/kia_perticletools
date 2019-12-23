@@ -49,28 +49,48 @@ CurrentList = 0
 def kiaparticletools_handler(scene):
     #global Handler_through
 
-    
+    global CurrentObj
+    global CurrentProp
+    global CurrentList#ツールのリストインデックス
+
+
+    if utils.selected() == []:
+        print('aaa')
+        CurrentObj = ''
+        cmd.clear()
+        return
 
     act = utils.getActiveObj()
+    
+    #print(CurrentObj , act.name)
+    #isnotHair = False
     if act == None:
         return 
 
-    global CurrentObj
-    global CurrentProp
-    global CurrentList
+    elif cmd.check_not_ps():#パーティクルシステムがないなら先に進まない
+        CurrentObj = act.name
+        cmd.clear()
+        return
 
+    #選択が変更されたときだけリロード。
+    if CurrentObj != act.name:
+        print('selection changed')
+        cmd.reload()    
+
+
+    #リストを選択したときとパーティクルシステムを選択したときの処理
     props = bpy.context.scene.kiaparticletools_oa
 
     ps = act.particle_systems
-    index_prop = ps.active_index
-    index_list = cmd.active_index()
+    index_prop = ps.active_index #PSのプロパティ
+    index_list = cmd.active_ps_index() #ツールのリスト
 
     index = None
     if CurrentList != index_list:
         ps.active_index = index = index_list
     elif CurrentProp != index_prop:
         index = index_prop
-        cmd.active_index_set(index_prop)
+        cmd.active_index_set( index_prop )
 
 
     #インデックスに変更があった場合、いろいろアップデート
@@ -83,7 +103,7 @@ def kiaparticletools_handler(scene):
 
 
     #表示オンオフ
-    cmd.disp()
+    #cmd.disp()
 
 
     if act.name == CurrentObj:
@@ -91,7 +111,7 @@ def kiaparticletools_handler(scene):
     else:
         CurrentObj = act.name
 
-    cmd.reload()
+    #cmd.reload()
 
 
 
@@ -150,6 +170,9 @@ class KIAPARTICLETOOLS_Props_OA(PropertyGroup):
     use_hair_bspline :  BoolProperty(name = "use_hair_bspline" , update=cmd.apply_use_hair_bspline)
 
 
+    edit_display_step :  IntProperty(name = "edit_display_step" , update=cmd.apply_edit_render_step)
+    #bpy.context.scene.tool_settings.particle_edit.display_step = 6
+
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
 #---------------------------------------------------------------------------------------
@@ -161,8 +184,8 @@ class KIAPARTICLETOOLS_UL_uilist(UIList):
 
             #item.nameが表示される
             #item.iconname = 'GROUP'
-            layout.prop(item, "disp", text = "")
-            layout.prop(item, "check", text = "" , icon = item.iconname)
+            layout.prop(item, "disp", text = "" , icon = item.iconname)
+            layout.prop(item, "check", text = "")
             #layout.operator("kiaparticletools.particle_effector_collection_assign" , icon = 'GROUP').mode = True
             layout.prop(item, "name", text="", emboss=False, icon_value=icon)
             #layout.prop(item, "check", text="", emboss=False, icon_value=icon)
@@ -200,7 +223,11 @@ class KIAPARTICLETOOLS_PT_particletools(utils.panel):
         layout.operator("kiaparticletools.create_particle_setting" , icon = 'GROUP')
         layout.operator("kiaparticletools.edit_attribute" , icon = 'GROUP')
         layout.operator("kiaparticletools.copy_particle_settings" , icon = 'GROUP')
-        layout.operator("kiaparticletools.sort_particle_sistem" , icon = 'GROUP')
+        #layout.operator("kiaparticletools.sort_particle_sistem" , icon = 'GROUP')
+
+        row = layout.row()
+        row.operator("kiaparticletools.showhide_all" , text = "show all").mode = True
+        row.operator("kiaparticletools.showhide_all" ,  text = "hide all").mode = False
 
         # box = layout.box()
         # box.label(text = 'Hair Shape')
@@ -251,6 +278,7 @@ class KIAPARTICLETOOLS_MT_edit_attribute(Operator):
 
         box = row.box()
         box.label(text = 'Display')
+        box.prop(props, "edit_display_step" , icon='RESTRICT_VIEW_OFF')
         box.prop(props, "render_step" , icon='RESTRICT_VIEW_OFF')
         box.prop(props, "display_step" , icon='RESTRICT_VIEW_OFF')
         box.prop(props, "use_hair_bspline" , icon='RESTRICT_VIEW_OFF')
@@ -273,8 +301,10 @@ class KIAPARTICLETOOLS_MT_edit_attribute(Operator):
 class KIAPARTICLETOOLS_Props_item(PropertyGroup):
     name : StringProperty()
     check : BoolProperty()
-    disp : BoolProperty()
-    iconname : StringProperty(default = 'GROUP')
+    disp : BoolProperty( update=cmd.disp )
+    iconname : StringProperty(default = 'RESTRICT_VIEW_OFF')
+    idx : IntProperty()
+    mod : StringProperty()
 
     #check : BoolProperty( update = cmd.showhide )
     #name1 : StringProperty(get=cmd.get_item, set=cmd.set_item)
@@ -316,14 +346,22 @@ class KIAPARTICLETOOLS_OT_copy_particle_settings(Operator):
         cmd.copy_particle_settings()
         return {'FINISHED'}
 
-class KIAPARTICLETOOLS_OT_sort_particle_sistem(Operator):
-    """パーティクルシステムの名前でのソート"""
-    bl_idname = "kiaparticletools.sort_particle_sistem"
-    bl_label = "sort by name"
-    def execute(self, context):
-        cmd.sort_particle_sistem()
-        return {'FINISHED'}
+# class KIAPARTICLETOOLS_OT_sort_particle_sistem(Operator):
+#     """パーティクルシステムの名前でのソート"""
+#     bl_idname = "kiaparticletools.sort_particle_sistem"
+#     bl_label = "sort by name"
+#     def execute(self, context):
+#         cmd.sort_particle_sistem()
+#         return {'FINISHED'}
 
+class KIAPARTICLETOOLS_OT_showhide_all(Operator):
+    """パーティクルシステムの表示、非表示"""
+    bl_idname = "kiaparticletools.showhide_all"
+    bl_label = ""
+    mode : BoolProperty()
+    def execute(self, context):
+        cmd.showhide_all(self.mode)
+        return {'FINISHED'}
 
 
 classes = (
@@ -338,7 +376,8 @@ classes = (
 
     KIAPARTICLETOOLS_OT_create_particle_setting,
     KIAPARTICLETOOLS_OT_copy_particle_settings,
-    KIAPARTICLETOOLS_OT_sort_particle_sistem
+    #KIAPARTICLETOOLS_OT_sort_particle_sistem,
+    KIAPARTICLETOOLS_OT_showhide_all
 )
 
 def register():
