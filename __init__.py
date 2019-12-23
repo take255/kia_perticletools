@@ -96,12 +96,6 @@ def kiaparticletools_handler(scene):
     #インデックスに変更があった場合、いろいろアップデート
     if index != None:
         CurrentProp = CurrentList = index   
-
-        # cmd.isBanApply = True #updateが走ってしまうのを禁止
-        # props.shape = ps[index].settings.shape
-        # cmd.isBanApply = False
-
-
     #表示オンオフ
     #cmd.disp()
 
@@ -110,9 +104,6 @@ def kiaparticletools_handler(scene):
         return
     else:
         CurrentObj = act.name
-
-    #cmd.reload()
-
 
 
     # ui_list = bpy.context.window_manager.kiaparticletools_list
@@ -147,10 +138,6 @@ def kiaparticletools_handler(scene):
 
 
 class KIAPARTICLETOOLS_Props_OA(PropertyGroup):
-
-    # setting_name : StringProperty(name="Setting", maxlen=63, update=cmd.test)
-    # allsettings : CollectionProperty(type=PropertyGroup) 
-
     collection_name : StringProperty(name="Collection", maxlen=63 )
     allcollections : CollectionProperty(type=PropertyGroup) 
 
@@ -198,11 +185,9 @@ class KIAPARTICLETOOLS_UL_uilist(UIList):
 
 
 class KIAPARTICLETOOLS_PT_particletools(utils.panel):
-    #bl_idname = "kiaparticletools.particletools"
     bl_label = "Particle Tools"
 
     def invoke(self, context, event):
-        #cmd.set_collection()
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
@@ -212,26 +197,18 @@ class KIAPARTICLETOOLS_PT_particletools(utils.panel):
         props = bpy.context.scene.kiaparticletools_oa
         layout = self.layout
 
-        # box = layout.box()
-        # box.label(text = 'effect collection')
-        # row = box.row()
-        # row.prop_search(props, "collection_name", props, "allcollections", icon='SCENE_DATA')
-        # row.operator("kiaparticletools.particle_effector_collection_assign" , icon = 'GROUP').mode = True
-        # row.operator("kiaparticletools.particle_effector_collection_assign" , icon = 'X').mode = False
-
-
         layout.operator("kiaparticletools.create_particle_setting" , icon = 'GROUP')
         layout.operator("kiaparticletools.edit_attribute" , icon = 'GROUP')
         layout.operator("kiaparticletools.copy_particle_settings" , icon = 'GROUP')
-        #layout.operator("kiaparticletools.sort_particle_sistem" , icon = 'GROUP')
 
         row = layout.row()
         row.operator("kiaparticletools.showhide_all" , text = "show all").mode = True
         row.operator("kiaparticletools.showhide_all" ,  text = "hide all").mode = False
 
-        # box = layout.box()
-        # box.label(text = 'Hair Shape')
-        # box.prop(props, "shape" , icon='RESTRICT_VIEW_OFF')
+        row = layout.row()
+        row.operator("kiaparticletools.showhide_check" , text = "show check").mode = True
+        row.operator("kiaparticletools.showhide_check" ,  text = "hide check").mode = False
+
 
 
         ui_list = context.window_manager.kiaparticletools_list
@@ -263,10 +240,6 @@ class KIAPARTICLETOOLS_MT_edit_attribute(Operator):
         props = bpy.context.scene.kiaparticletools_oa
         layout = self.layout
 
-        # box.label(text = 'effect collection')
-        # row = box.row()
-        # row.prop_search(props, "setting_name", props, "allsettings", icon='SCENE_DATA')
-
         row = layout.row()
 
         box = row.box()
@@ -283,10 +256,6 @@ class KIAPARTICLETOOLS_MT_edit_attribute(Operator):
         box.prop(props, "display_step" , icon='RESTRICT_VIEW_OFF')
         box.prop(props, "use_hair_bspline" , icon='RESTRICT_VIEW_OFF')
         
-
-    # root_radius :  FloatProperty(name = "root_radius",precision = 4, update=cmd.apply)
-    # tip_radius :  FloatProperty(name = "tip_radius",precision = 4, update=cmd.apply)
-    # radius_scale :  FloatProperty(name = "radius_scale",precision = 4, update=cmd.apply)
 
         box = layout.box()
         box.label(text = 'effect collection')
@@ -305,12 +274,7 @@ class KIAPARTICLETOOLS_Props_item(PropertyGroup):
     iconname : StringProperty(default = 'RESTRICT_VIEW_OFF')
     idx : IntProperty()
     mod : StringProperty()
-
-    #check : BoolProperty( update = cmd.showhide )
-    #name1 : StringProperty(get=cmd.get_item, set=cmd.set_item)
-    #check : StringProperty(get=cmd.get_item, set=cmd.set_item)
     
-
 bpy.utils.register_class(KIAPARTICLETOOLS_Props_item)
 
 class KIAPARTICLETOOLS_Props_list(PropertyGroup):
@@ -364,6 +328,16 @@ class KIAPARTICLETOOLS_OT_showhide_all(Operator):
         return {'FINISHED'}
 
 
+class KIAPARTICLETOOLS_OT_showhide_check(Operator):
+    """チェックを付けたパーティクルシステムの表示、非表示"""
+    bl_idname = "kiaparticletools.showhide_check"
+    bl_label = ""
+    mode : BoolProperty()
+    def execute(self, context):
+        cmd.showhide_check(self.mode)
+        return {'FINISHED'}
+
+
 classes = (
     KIAPARTICLETOOLS_Props_OA,
     KIAPARTICLETOOLS_PT_particletools,
@@ -377,7 +351,8 @@ classes = (
     KIAPARTICLETOOLS_OT_create_particle_setting,
     KIAPARTICLETOOLS_OT_copy_particle_settings,
     #KIAPARTICLETOOLS_OT_sort_particle_sistem,
-    KIAPARTICLETOOLS_OT_showhide_all
+    KIAPARTICLETOOLS_OT_showhide_all,
+    KIAPARTICLETOOLS_OT_showhide_check,
 )
 
 def register():

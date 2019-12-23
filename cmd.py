@@ -366,9 +366,16 @@ def check_not_ps():
 
 #すべてのパーティクルの表示状態変更
 def showhide_all(mode):
-    print(mode)
     for x in itemlist():
         x.disp = mode
+
+#チェックを付けたパーティクルの表示状態変更
+def showhide_check(mode):
+    for x in itemlist():
+        if x.check:
+            x.disp = True
+        else:
+            x.disp = False
 
     #disp()
 
